@@ -8,8 +8,8 @@ from Frontend.charts import render_analytics_dashboard
 # ===========================================================================
 st.set_page_config(
     page_title="Hệ Thống Xếp Hàng Call Center - CSD203",
-    page_icon="📞",
-    layout="wide"  # Ép giao diện tràn màn hình ngang xem cho sướng mắt
+    page_icon="☎",
+    layout="wide"
 )
 
 # ===========================================================================
@@ -25,39 +25,35 @@ init_session_state()
 # ===========================================================================
 # 3. DỰNG LAYOUT CHÍNH CHO PHẦN MỀM
 # ===========================================================================
-st.title("📞 Hệ Thống Điều Phối & Xếp Hàng Chờ Call Center")
-st.markdown("*Đồ án thực hành chuyên sâu môn Cấu trúc dữ liệu và Giải thuật (CSD203) - Nhóm Cộng Tác Viên*")
+st.title("Hệ Thống Xếp Hàng Tổng Đài")
 st.markdown("---")
 
 # Gọi thanh công cụ nhập liệu xuất hiện ở bên hành lang trái màn hình (Sidebar)
 render_sidebar_inputs()
 
 # Chia màn hình chính thành 2 Tab chức năng cực kỳ hiện đại và mượt mà
-tab_dashboard, tab_analytics = st.tabs(["🖥️ Màn Hình Điều Phối Tổng Đài", "📊 Biểu Đồ & Thống Kê Lịch Sử"])
+tab_dashboard, tab_analytics = st.tabs(["Bàn Điều Phối", "Thống Kê & Biểu Đồ"])
 
 # ---------------------------------------------------------------------------
 # TAB 1: KHÔNG GIAN LÀM VIỆC CỦA TỔNG ĐÀI VIÊN
 # ---------------------------------------------------------------------------
 with tab_dashboard:
-    st.markdown("### 🎧 Bàn Làm Việc Điều Phối Cuộc Gọi")
+    st.markdown("### Bàn Làm Việc Tổng Đài Viên")
     
-    # Khối hiển thị thông tin cuộc gọi đang kết nối thời gian thực
     if st.session_state.current_serving:
         cs = st.session_state.current_serving
-        icon = "🔥 VIP" if cs["type"] == "VIP" else "👤 Thường"
+        customer_type = "[VIP]" if cs["type"] == "VIP" else "[Thường]"
         st.success(
-            f"**🎧 ĐANG TRONG CUỘC GỌI:** {cs['name']} | "
-            f"**Phân loại:** {icon} | "
-            f"**Nội dung hỗ trợ:** {cs['detail']} | "
-            f"**Kết nối lúc:** {cs['time']}"
+            f"**ĐANG TRONG CUỘC GỌI:** {cs['name']} | "
+            f"**Loại:** {customer_type} | "
+            f"**Dịch vụ:** {cs['detail']} | "
+            f"**Lúc:** {cs['time']}"
         )
     else:
-        st.info("ℹ️ Trạng thái: Tổng đài viên đang rảnh tay. Vui lòng nhấn nút to màu xanh phía dưới để bốc cuộc gọi tiếp theo ra xử lý.")
+        st.info("Trạng thái: Rảnh tay. Nhấn nút dưới để tiếp nhận cuộc gọi tiếp theo.")
         
-    # Nút bấm quyền lực nhất ứng dụng: Phục vụ khách hàng tiếp theo
-    # Nút này bấm một cái là Callback kích hoạt: bốc khách khỏi Queue -> Lưu thẳng vào SQL Database!
     st.button(
-        "🎧 TIẾP NHẬN CUỘC GỌI TIẾP THEO (ƯU TIÊN TUYẾN VIP / AGING PROCESS)", 
+        "TIẾP NHẬN CUỘC GỌI TIẾP THEO", 
         on_click=serve_next_call_callback, 
         type="primary", 
         use_container_width=True
@@ -70,12 +66,7 @@ with tab_dashboard:
     
     st.markdown("---")
     
-    # Gọi hàm hiển thị bảng giám sát so sánh 2 hàng chờ real-time
     render_queue_monitor()
 
-# ---------------------------------------------------------------------------
-# TAB 2: TRANG PHÂN TÍCH VÀ ĐỒ THỊ LỊCH SỬ
-# ---------------------------------------------------------------------------
 with tab_analytics:
-    # Gọi toàn bộ cụm chức năng vẽ biểu đồ từ file charts.py lên màn hình
     render_analytics_dashboard()
