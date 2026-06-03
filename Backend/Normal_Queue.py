@@ -2,7 +2,6 @@ from collections import deque
 from datetime import datetime
 from typing import Optional
 
-
 class Customer:
 
     def __init__(self, name: str, call_type: str = "Thông thường"):

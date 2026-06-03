@@ -1,7 +1,6 @@
 import streamlit as st
 import uuid
 from datetime import datetime
-
 from Backend.Normal_Queue import NormalQueue, Customer, add_customer
 from Backend.priority_queue_logic import PriorityQueue, Call
 

@@ -10,7 +10,6 @@ def create_tables() -> None:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS call_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

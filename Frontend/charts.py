@@ -4,7 +4,6 @@ import plotly.express as px
 import plotly.graph_objects as go
 from Database.db_setup import get_all_calls
 
-
 @st.cache_data(ttl=5)
 def cached_get_all_calls():
     """Cache database calls for 5 seconds to improve performance."""
