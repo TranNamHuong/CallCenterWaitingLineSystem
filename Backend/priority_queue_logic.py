@@ -1,5 +1,6 @@
 from datetime import datetime
 
+
 class Call:
     def __init__(self, call_id: str, name: str, base_priority: int, call_type: str):
         self.call_id = call_id

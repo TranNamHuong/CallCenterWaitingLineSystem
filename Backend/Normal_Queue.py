@@ -123,7 +123,7 @@ class NormalQueue:
             if customer.name == name:
                 return i + 1
         return -1
-
+ 
     def clear(self) -> None:
         """Xoá toàn bộ hàng đợi (dùng khi reset hệ thống hoặc cuối ca)."""
         self._queue.clear()
