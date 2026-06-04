@@ -1,3 +1,6 @@
+from platform import node
+
+
 class PriorityQueue:
     def __init__(self):
         self.head = None
@@ -50,14 +53,22 @@ class PriorityQueue:
                 best_prev.next = best.next
             best.next = None
  
-            # Append to end of sorted sub-list
+            # TRƯỚC — mỗi lần append phải scan từ đầu
             if sorted_head is None:
                 sorted_head = best
             else:
                 node = sorted_head
-                while node.next is not None:
+                while node.next is not None:  # O(n) mỗi lần!
                     node = node.next
                 node.next = best
+
+            # SAU — trỏ thẳng vào tail, O(1)
+            if sorted_head is None:
+                sorted_head = best
+            else:
+                sorted_tail.next = best
+
+            sorted_tail = best   # chung cho cả 2 trường hợp
  
         self.head = sorted_head
  
