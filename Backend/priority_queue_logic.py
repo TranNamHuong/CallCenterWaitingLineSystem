@@ -1,1 +1,1 @@
-okokokk
+print("w")
