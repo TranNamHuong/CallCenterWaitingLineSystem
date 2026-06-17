@@ -1,13 +1,12 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 
-# Import your custom logic
-from db_setup import create_tables, seed_data, insert_call
-from normal_queue_fifo import NormalQueue, Customer # Assume file is renamed to normal_queue_fifo.py
+# Đã sửa lại đường dẫn trỏ vào đúng thư mục Database và Backend
+from Database.db_setup import create_tables, seed_data, insert_call
+from Backend.normal_queue_fifo import NormalQueue, Customer 
 
 app = FastAPI(title="Call Center Queue System")
 
@@ -63,6 +62,7 @@ async def queue_status():
 # Serve the HTML UI
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
+    # Lưu ý: Đảm bảo file index.html nằm ở thư mục ngoài cùng (ngang hàng với app.py)
     with open("index.html", "r", encoding="utf-8") as f:
         return f.read()
 
