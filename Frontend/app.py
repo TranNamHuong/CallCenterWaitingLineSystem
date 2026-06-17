@@ -60,10 +60,11 @@ async def queue_status():
     }
 
 # Serve the HTML UI
+# Serve the HTML UI
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
-    # Lưu ý: Đảm bảo file index.html nằm ở thư mục ngoài cùng (ngang hàng với app.py)
-    with open("index.html", "r", encoding="utf-8") as f:
+    # Thêm chữ Frontend/ vào trước tên file
+    with open("Frontend/index.html", "r", encoding="utf-8") as f:
         return f.read()
 
 if __name__ == "__main__":
