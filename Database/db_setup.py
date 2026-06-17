@@ -1,15 +1,15 @@
 import sqlite3
 import pandas as pd
-from datetime import datetime, timedelta
-import random
-from faker import Faker
+from datetime import datetime
 
-DB_PATH = "call_center.db"
-fake = Faker('vi_VN') # Vietnamese mock data
+# Đường dẫn cố định trỏ đến file dữ liệu nằm trong thư mục database/
+DB_PATH = "Database/call_center.db"
 
 def create_tables() -> None:
+    """Create call history tables if they don't exist."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+    
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS call_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -24,50 +24,65 @@ def create_tables() -> None:
     conn.close()
 
 def insert_call(name: str, customer_type: str, call_type: str, joined_at: str) -> None:
+    """Log and save call history to database."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+    
     served_at_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
     cursor.execute("""
         INSERT INTO call_logs (name, customer_type, call_type, joined_at, served_at)
         VALUES (?, ?, ?, ?, ?)
     """, (name, customer_type, call_type, joined_at, served_at_str))
+    
     conn.commit()
     conn.close()
 
-def seed_data(num_records=50) -> None:
-    """Generate random mock data for testing."""
+def get_all_calls() -> pd.DataFrame:
+    """Retrieve all call history from database as Pandas DataFrame."""
+    conn = sqlite3.connect(DB_PATH)
+    
+    query = "SELECT * FROM call_logs ORDER BY id DESC"
+    df = pd.read_sql_query(query, conn)
+    
+    conn.close()
+    return df
+
+def seed_data() -> None:
+    """Auto-load sample data for demo if database is empty."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM call_logs")
     
-    if cursor.fetchone()[0] == 0:
-        print(f"Generating {num_records} mock customers...")
-        sample_calls = []
-        services = ["Hỗ trợ kỹ thuật", "Thanh toán", "Khiếu nại", "Tư vấn sản phẩm"]
-        types = ["VIP", "Standard"]
+    cursor.execute("SELECT COUNT(*) FROM call_logs")
+    count = cursor.fetchone()[0]
+    
+    # Nếu chưa có dòng nào, tiến hành nạp dữ liệu giả lập có sẵn để chạy demo
+    if count == 0:
+        sample_calls = [
+            ("Nguyen Van A", "VIP", "Platinum VIP - Technical Support", "2026-06-03 08:15:00", "2026-06-03 08:16:30"),
+            ("Le Thi B", "Standard", "Billing", "2026-06-03 08:20:00", "2026-06-03 08:25:00"),
+            ("Pham Minh C", "VIP", "Gold VIP - Product Info", "2026-06-03 09:05:00", "2026-06-03 09:07:00"),
+            ("Tran Quoc D", "Standard", "Technical Support", "2026-06-03 09:11:00", "2026-06-03 09:18:00"),
+            ("Hoang Duc E", "Standard", "Complaints", "2026-06-03 10:00:00", "2026-06-03 10:04:00"),
+            ("Dinh Thi F", "VIP", "Silver VIP - Billing", "2026-06-03 10:30:00", "2026-06-03 10:32:00")
+        ]
         
-        for _ in range(num_records):
-            name = fake.name()
-            c_type = random.choices(types, weights=[30, 70])[0] # 30% VIP, 70% Standard
-            service = random.choice(services)
-            join_time = datetime.now() - timedelta(minutes=random.randint(5, 120))
-            serve_time = join_time + timedelta(minutes=random.randint(2, 15))
-            
-            sample_calls.append((
-                name, c_type, service, 
-                join_time.strftime("%Y-%m-%d %H:%M:%S"),
-                serve_time.strftime("%Y-%m-%d %H:%M:%S")
-            ))
-            
         cursor.executemany("""
             INSERT INTO call_logs (name, customer_type, call_type, joined_at, served_at)
             VALUES (?, ?, ?, ?, ?)
         """, sample_calls)
+        
         conn.commit()
-        print("Mock data loaded successfully!")
+        print("Sample data loaded successfully!")
     
     conn.close()
 
+# Quick test when running this file directly
 if __name__ == "__main__":
+    import os
+    print("--- Initialize SQLite Database System ---")
     create_tables()
     seed_data()
+    if os.path.exists(DB_PATH):
+        print(f"Success: Database file '{DB_PATH}' created!")
+        print(get_all_calls().head(2))
