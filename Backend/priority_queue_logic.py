@@ -1,6 +1,19 @@
-from platform import node
+from datetime import datetime
 
+class Call:
+    def __init__(self, call_id: str, name: str, base_priority: int, call_type: str):
+        self.call_id = call_id
+        self.name = name
+        self.base_priority = base_priority  # Điểm ưu tiên gốc (ví dụ: 10, 20, 30)
+        self.call_type = call_type
+        self.joined_at = datetime.now()
+        self.next = None                    # Con trỏ chỉ đến nút tiếp theo
 
+    def effective_score(self) -> float:
+        # Cơ chế Aging (Chống chết đói thuật toán): Khách chờ càng lâu, điểm ưu tiên càng tăng!
+        waiting_time = (datetime.now() - self.joined_at).total_seconds()
+        return self.base_priority + (waiting_time * 0.1)  # Tăng 0.1 điểm mỗi giây chờ
+    
 class PriorityQueue:
     def __init__(self):
         self.head = None
@@ -53,25 +66,18 @@ class PriorityQueue:
                 best_prev.next = best.next
             best.next = None
  
-            # TRƯỚC — mỗi lần append phải scan từ đầu
+            # Append to end of sorted sub-list
             if sorted_head is None:
                 sorted_head = best
+                sorted_tail = best
             else:
-                node = sorted_head
-                while node.next is not None:  # O(n) mỗi lần!
-                    node = node.next
-                node.next = best
+                sorted_tail.next = best  
+                sorted_tail = best       
+                
+            self.head = sorted_head
+        
 
-            # SAU — trỏ thẳng vào tail, O(1)
-            if sorted_head is None:
-                sorted_head = best
-            else:
-                sorted_tail.next = best
-
-            sorted_tail = best   # chung cho cả 2 trường hợp
- 
-        self.head = sorted_head
- 
+    
     def dequeue(self):
         """Remove and return the highest-priority call (head) — O(1)."""
         if self.is_empty():
