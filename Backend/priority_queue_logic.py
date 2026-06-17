@@ -31,6 +31,7 @@ class PriorityQueue:
             return
  
         current = self.head
+        
         while (current.next is not None
                and current.next.effective_score() >= score):
             current = current.next
@@ -43,9 +44,10 @@ class PriorityQueue:
             return  # 0 or 1 node — already sorted
  
         sorted_head = None  # head of the growing sorted sub-list
+        sorted_tail = None  # tail of the growing sorted sub-list
  
         while self.head is not None:
-            # Pick the node with the highest effective_score from unsorted
+            # Pick the node with the highest effective_score fromS unsorted
             prev_max  = None
             prev      = None
             curr      = self.head
@@ -74,7 +76,11 @@ class PriorityQueue:
                 sorted_tail.next = best  
                 sorted_tail = best       
                 
+<<<<<<< HEAD
             self.head = sorted_head
+=======
+        self.head = sorted_head
+>>>>>>> 594a2d10f00d7e8e3bf38fc4658be343ecf60634
         
 
     
