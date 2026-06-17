@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Call Center Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h2 { color: #333; margin-top: 0; }
+        input, select, button { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
+        button { background: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background: #0056b3; }
+        button.serve-btn { background: #28a745; }
+        button.serve-btn:hover { background: #218838; }
+        .queue-list { list-style: none; padding: 0; }
+        .queue-item { background: #e9ecef; margin-bottom: 10px; padding: 15px; border-radius: 5px; display: flex; justify-content: space-between; }
+        .badge { background: #ffc107; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="card">
+            <h2>Add Customer</h2>
+            <input type="text" id="custName" placeholder="Customer Name (e.g. John Doe)">
+            <select id="callType">
+                <option value="Technical Support">Technical Support</option>
+                <option value="Billing">Billing</option>
+                <option value="Complaints">Complaints</option>
+            </select>
+            <button onclick="addCustomer()">Enqueue to FIFO</button>
+            
+            <hr style="margin: 20px 0;">
+            
+            <h2>Operator Desk</h2>
+            <button class="serve-btn" onclick="serveNext()">Serve Next Customer</button>
+            <div id="servingStatus" style="margin-top: 15px; font-weight: bold; color: #d32f2f;"></div>
+        </div>
+
+        <div class="card">
+            <h2>Live Queue Status <span id="queueCount" class="badge">0 Waiting</span></h2>
+            <ul class="queue-list" id="queueList">
+                </ul>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000/api";
+
+        async function fetchQueue() {
+            const res = await fetch(`${API_URL}/status`);
+            const data = await res.json();
+            
+            document.getElementById('queueCount').innerText = `${data.waiting_count} Waiting`;
+            const list = document.getElementById('queueList');
+            list.innerHTML = '';
+
+            data.customers.forEach(cust => {
+                list.innerHTML += `
+                    <li class="queue-item">
+                        <div>
+                            <strong>#${cust.position} - ${cust.name}</strong><br>
+                            <small>${cust.call_type} | Joined: ${cust.joined_at}</small>
+                        </div>
+                        <div><span class="badge">Standard</span></div>
+                    </li>
+                `;
+            });
+        }
+
+        async function addCustomer() {
+            const name = document.getElementById('custName').value;
+            const type = document.getElementById('callType').value;
+            if(!name) return alert("Please enter a name!");
+
+            await fetch(`${API_URL}/enqueue`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name, call_type: type })
+            });
+            document.getElementById('custName').value = '';
+            fetchQueue();
+        }
+
+        async function serveNext() {
+            const res = await fetch(`${API_URL}/serve`);
+            const data = await res.json();
+            const statusDiv = document.getElementById('servingStatus');
+
+            if (data.status === 'success') {
+                statusDiv.innerHTML = `✅ Now Serving: ${data.customer.name} (${data.customer.call_type})`;
+                fetchQueue();
+            } else {
+                statusDiv.innerHTML = `ℹ️ ${data.message}`;
+            }
+        }
+
+        // Auto-refresh the queue every 2 seconds
+        setInterval(fetchQueue, 2000);
+        fetchQueue();
+    </script>
+</body>
+</html>
