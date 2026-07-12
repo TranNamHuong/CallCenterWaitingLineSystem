@@ -2,12 +2,13 @@ from datetime import datetime
 
 
 class Call:
-    def __init__(self, call_id: str, name: str, base_priority: int, call_type: str):
+    def __init__(self, call_id: str, name: str, base_priority: int, call_type: str,
+                 joined_at: datetime = None):
         self.call_id = call_id
         self.name = name
         self.base_priority = base_priority
         self.call_type = call_type
-        self.joined_at = datetime.now()
+        self.joined_at = joined_at or datetime.now()
         self.next = None
 
     def effective_score(self) -> float:

@@ -5,13 +5,15 @@ from typing import Optional
 
 
 class Customer:
-    def __init__(self, name: str, call_type: str = "Thông thường"):
-        self.customer_id: str = str(uuid.uuid4())  # Định danh duy nhất — tránh trùng tên
+    def __init__(self, name: str, call_type: str = "Thông thường",
+                 customer_id: str = None, joined_at: datetime = None):
+        # customer_id/joined_at có thể truyền vào khi khôi phục từ DB sau restart;
+        # nếu không truyền thì tạo mới như bình thường.
+        self.customer_id: str = customer_id or str(uuid.uuid4())
         self.name: str = name
         self.call_type: str = call_type
-        self.joined_at: datetime = datetime.now()
+        self.joined_at: datetime = joined_at or datetime.now()
         self.position: int = 0
-
     def __repr__(self) -> str:
         return (
             f"Customer(id='{self.customer_id[:8]}', name='{self.name}', "

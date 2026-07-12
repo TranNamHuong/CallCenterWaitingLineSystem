@@ -21,6 +21,16 @@ def create_tables() -> None:
                 served_at TEXT NOT NULL
             )
         """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS waiting_queue (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                customer_type TEXT NOT NULL CHECK (customer_type IN ('VIP', 'Standard')),
+                call_type TEXT NOT NULL,
+                base_priority INTEGER,
+                joined_at TEXT NOT NULL
+            )
+        """)
         conn.commit()
     except sqlite3.Error as e:
         # Re-raise as a clear startup failure rather than letting FastAPI crash silently
@@ -90,6 +100,57 @@ def seed_data() -> None:
         print(f"[DB ERROR] seed_data failed: {e}")
     finally:
         conn.close()
+
+def insert_waiting(id_: str, name: str, customer_type: str, call_type: str,
+                    joined_at: str, base_priority: int = None) -> bool:
+    """Lưu khách đang chờ xuống DB — dùng khi enqueue, để khôi phục nếu server restart."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO waiting_queue (id, name, customer_type, call_type, base_priority, joined_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (id_, name, customer_type, call_type, base_priority, joined_at))
+        conn.commit()
+        return True
+    except sqlite3.Error as e:
+        print(f"[DB ERROR] insert_waiting failed for '{name}': {e}")
+        return False
+    finally:
+        conn.close()
+
+
+def delete_waiting(id_: str) -> bool:
+    """Xóa khách khỏi bảng waiting_queue — dùng khi khách được serve hoặc bị remove."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM waiting_queue WHERE id = ?", (id_,))
+        conn.commit()
+        return True
+    except sqlite3.Error as e:
+        print(f"[DB ERROR] delete_waiting failed for id '{id_}': {e}")
+        return False
+    finally:
+        conn.close()
+
+
+def get_all_waiting() -> list[dict]:
+    """Đọc toàn bộ khách đang chờ, sắp theo thời gian vào trước — dùng lúc khởi động server."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM waiting_queue ORDER BY joined_at ASC")
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
+    except sqlite3.Error as e:
+        print(f"[DB ERROR] get_all_waiting failed: {e}")
+        return []
+    finally:
+        conn.close()
+
+
 
 
 if __name__ == "__main__":
