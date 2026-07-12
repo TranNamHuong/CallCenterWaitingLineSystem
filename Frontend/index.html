@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Call Center Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; margin: 0; padding: 20px; }
+        .container { max-width: 1100px; margin: auto; display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h2 { color: #333; margin-top: 0; }
+        h3 { color: #555; margin: 20px 0 10px; font-size: 15px; }
+        input, select, button { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px; }
+        button { background: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background: #0056b3; }
+        button.serve-btn { background: #28a745; }
+        button.serve-btn:hover { background: #218838; }
+        .queue-list { list-style: none; padding: 0; margin: 0 0 15px 0; }
+        .queue-item { background: #e9ecef; margin-bottom: 8px; padding: 12px 15px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .queue-item.vip { background: #fff3cd; }
+        .badge { background: #6c757d; color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        .badge.count { background: #007bff; }
+        .badge.vip { background: #ffc107; color: #333; }
+        .badge.standard { background: #17a2b8; }
+        .empty-msg { color: #888; font-style: italic; padding: 10px 0; }
+        #servingStatus { margin-top: 15px; font-weight: bold; min-height: 20px; }
+        .success { color: #218838; }
+        .info { color: #555; }
+        .error { color: #d32f2f; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="card">
+            <h2>Add Customer</h2>
+            <input type="text" id="custName" placeholder="Customer Name (e.g. John Doe)">
+            <select id="callType">
+                <option value="Technical Support">Technical Support</option>
+                <option value="Billing">Billing</option>
+                <option value="Complaints">Complaints</option>
+                <option value="Product Info">Product Info</option>
+            </select>
+            <select id="customerType">
+                <option value="Standard">Standard (FIFO)</option>
+                <option value="VIP">VIP (Priority)</option>
+            </select>
+            <button onclick="addCustomer()">Enqueue</button>
+
+            <hr style="margin: 20px 0;">
+
+            <h2>Operator Desk</h2>
+            <button class="serve-btn" onclick="serveNext()">Serve Next Customer</button>
+            <div id="servingStatus"></div>
+        </div>
+
+        <div class="card">
+            <h2>Live Queue Status
+                <span id="queueCount" class="badge count">0 Waiting</span>
+                <span id="servedCount" class="badge">0 Served</span>
+            </h2>
+
+            <h3>VIP Priority Queue (<span id="vipCount">0</span>)</h3>
+            <ul class="queue-list" id="vipList"></ul>
+
+            <h3>Standard FIFO Queue (<span id="stdCount">0</span>)</h3>
+            <ul class="queue-list" id="stdList"></ul>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "/api";
+
+        async function fetchQueue() {
+            try {
+                const res = await fetch(`${API_URL}/status`);
+                if (!res.ok) throw new Error(`Status ${res.status}`);
+                const data = await res.json();
+
+                document.getElementById('queueCount').innerText = `${data.waiting_count} Waiting`;
+                document.getElementById('servedCount').innerText = `${data.served_count} Served`;
+                document.getElementById('vipCount').innerText = data.vip_waiting;
+                document.getElementById('stdCount').innerText = data.standard_waiting;
+
+                const vipList = document.getElementById('vipList');
+                vipList.innerHTML = '';
+                if (data.vip_customers.length === 0) {
+                    vipList.innerHTML = '<li class="empty-msg">No VIP calls waiting</li>';
+                } else {
+                    data.vip_customers.forEach(cust => {
+                        vipList.innerHTML += `
+                            <li class="queue-item vip">
+                                <div>
+                                    <strong>${cust.name}</strong><br>
+                                    <small>${cust.call_type} | Joined: ${cust.joined_at} | Score: ${cust.effective_score}</small>
+                                </div>
+                                <span class="badge vip">VIP</span>
+                            </li>
+                        `;
+                    });
+                }
+
+                const stdList = document.getElementById('stdList');
+                stdList.innerHTML = '';
+                if (data.standard_customers.length === 0) {
+                    stdList.innerHTML = '<li class="empty-msg">No standard calls waiting</li>';
+                } else {
+                    data.standard_customers.forEach(cust => {
+                        stdList.innerHTML += `
+                            <li class="queue-item">
+                                <div>
+                                    <strong>#${cust.position} - ${cust.name}</strong><br>
+                                    <small>${cust.call_type} | Joined: ${cust.joined_at}</small>
+                                </div>
+                                <span class="badge standard">Standard</span>
+                            </li>
+                        `;
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to fetch queue status:", err);
+            }
+        }
+
+        async function addCustomer() {
+            const name = document.getElementById('custName').value.trim();
+            const callType = document.getElementById('callType').value;
+            const customerType = document.getElementById('customerType').value;
+            if (!name) return alert("Please enter a name!");
+
+            try {
+                const res = await fetch(`${API_URL}/enqueue`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name, call_type: callType, customer_type: customerType })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    alert(data.detail || "Failed to add customer.");
+                    return;
+                }
+                document.getElementById('custName').value = '';
+                fetchQueue();
+            } catch (err) {
+                alert("Network error while adding customer.");
+            }
+        }
+
+        async function serveNext() {
+            const statusDiv = document.getElementById('servingStatus');
+            try {
+                const res = await fetch(`${API_URL}/serve`, { method: 'POST' });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    statusDiv.className = 'success';
+                    statusDiv.innerHTML = `✅ Now Serving: ${data.customer.name} (${data.customer.call_type}) — ${data.served_from}`;
+                    if (data.warning) {
+                        statusDiv.innerHTML += `<br><span class="error">⚠️ ${data.warning}</span>`;
+                    }
+                } else if (data.status === 'empty') {
+                    statusDiv.className = 'info';
+                    statusDiv.innerHTML = `ℹ️ ${data.message}`;
+                } else {
+                    statusDiv.className = 'error';
+                    statusDiv.innerHTML = `❌ ${data.detail || 'Unknown error'}`;
+                }
+                fetchQueue();
+            } catch (err) {
+                statusDiv.className = 'error';
+                statusDiv.innerHTML = `❌ Network error while serving customer.`;
+            }
+        }
+
+        // Auto-refresh the queue every 2 seconds
+        setInterval(fetchQueue, 2000);
+        fetchQueue();
+    </script>
+</body>
+</html>
